@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>YT Summarizer - Settings</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #0a0a0f;
+        --surface: #13131a;
+        --surface2: #1c1c26;
+        --border: #2a2a3a;
+        --accent: #e63946;
+        --accent2: #ff6b6b;
+        --text: #f0f0f5;
+        --muted: #7a7a9a;
+        --success: #2ec4b6;
+        --mono: "Space Mono", monospace;
+        --sans: "DM Sans", sans-serif;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        padding: 40px 20px;
+      }
+      .container {
+        width: 100%;
+        max-width: 540px;
+      }
+      .header {
+        margin-bottom: 36px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .logo-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--accent);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        color: #fff;
+        font-weight: 700;
+        font-family: var(--mono);
+      }
+      .logo-text {
+        font-family: var(--mono);
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .header-sub {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      .card-title {
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+      .field {
+        margin-bottom: 16px;
+      }
+      .field:last-child {
+        margin-bottom: 0;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 6px;
+      }
+      .label-hint {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 400;
+        margin-left: 6px;
+      }
+      .label-recommended {
+        font-size: 10px;
+        color: var(--success);
+        font-weight: 600;
+        margin-left: 6px;
+        text-transform: uppercase;
+      }
+      .input-wrap {
+        position: relative;
+      }
+      input[type="password"],
+      input[type="text"] {
+        width: 100%;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 10px 40px 10px 12px;
+        border-radius: 8px;
+        font-family: var(--mono);
+        font-size: 12px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      input:focus {
+        border-color: var(--accent);
+      }
+      input::placeholder {
+        color: var(--border);
+      }
+      .toggle-vis {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 2px;
+      }
+      .toggle-vis:hover {
+        color: var(--text);
+      }
+      .field-hint {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 6px;
+        line-height: 1.5;
+      }
+      .field-hint a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .field-hint a:hover {
+        text-decoration: underline;
+      }
+      .modelfile-box {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .btn-copy {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-family: var(--mono);
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.15s;
+        margin-top: 8px;
+      }
+      .btn-copy:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .copy-msg {
+        font-size: 11px;
+        color: var(--success);
+        margin-left: 8px;
+        display: none;
+      }
+      .btn-save {
+        width: 100%;
+        padding: 12px;
+        background: var(--accent);
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 4px;
+      }
+      .btn-save:hover {
+        background: var(--accent2);
+        box-shadow: 0 4px 16px rgba(230, 57, 70, 0.35);
+      }
+      .save-msg {
+        text-align: center;
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--success);
+        font-family: var(--mono);
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .save-msg.show {
+        opacity: 1;
+      }
+      .privacy-note {
+        display: flex;
+        gap: 10px;
+        padding: 14px;
+        background: rgba(46, 196, 182, 0.05);
+        border: 1px solid rgba(46, 196, 182, 0.15);
+        border-radius: 8px;
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      .privacy-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .btn-danger {
+        background: var(--border);
+        color: var(--text);
+      }
+      .btn-danger:hover {
+        background: #3a3a4a;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="logo">
+          <div class="logo-icon">YT</div>
+          <span class="logo-text">YT Summarizer</span>
+        </div>
+        <p class="header-sub">
+          Configure your AI providers and manage cached summaries.
+        </p>
+      </div>
+
+      <!-- Groq (default, free) -->
+      <div class="card">
+        <div class="card-title">Groq (Free)</div>
+        <div class="field">
+          <label
+            >Groq API Key
+            <span class="label-recommended">recommended</span></label
+          >
+          <div class="input-wrap">
+            <input
+              type="password"
+              id="groqKey"
+              placeholder="gsk_..."
+              autocomplete="off"
+            />
+            <button class="toggle-vis" data-target="groqKey">Show</button>
+          </div>
+          <p class="field-hint">
+            Free tier with ~100 summaries/day. Get your key at
+            <a href="https://console.groq.com" target="_blank"
+              >console.groq.com</a
+            >
+          </p>
+        </div>
+      </div>
+
+      <!-- Claude and OpenAI -->
+      <div class="card">
+        <div class="card-title">Claude &amp; OpenAI</div>
+        <div class="field">
+          <label
+            >Anthropic (Claude) API Key
+            <span class="label-hint">optional</span></label
+          >
+          <div class="input-wrap">
+            <input
+              type="password"
+              id="claudeKey"
+              placeholder="sk-ant-api03-..."
+              autocomplete="off"
+            />
+            <button class="toggle-vis" data-target="claudeKey">Show</button>
+          </div>
+          <p class="field-hint">
+            Get your key at
+            <a href="https://console.anthropic.com" target="_blank"
+              >console.anthropic.com</a
+            >
+          </p>
+        </div>
+        <div class="field">
+          <label>OpenAI API Key <span class="label-hint">optional</span></label>
+          <div class="input-wrap">
+            <input
+              type="password"
+              id="openaiKey"
+              placeholder="sk-proj-..."
+              autocomplete="off"
+            />
+            <button class="toggle-vis" data-target="openaiKey">Show</button>
+          </div>
+          <p class="field-hint">
+            Get your key at
+            <a href="https://platform.openai.com/api-keys" target="_blank"
+              >platform.openai.com/api-keys</a
+            >
+          </p>
+        </div>
+      </div>
+
+      <!-- Ollama (local) -->
+      <div class="card">
+        <div class="card-title">Ollama (Local / Private)</div>
+        <div class="field">
+          <p class="field-hint" style="margin-top: 0">
+            Ollama runs locally on your machine. No API key needed. Install from
+            <a href="https://ollama.com" target="_blank">ollama.com</a>, then
+            run: <code style="color: var(--text)">ollama pull phi3:mini</code>
+          </p>
+        </div>
+        <div class="field">
+          <label
+            >Custom Modelfile
+            <span class="label-hint"
+              >optional, for optimized summaries</span
+            ></label
+          >
+          <div class="modelfile-box" id="modelfileContent">
+            FROM phi3:mini SYSTEM "You are a precise YouTube video summarizer.
+            Output clean, structured Markdown summaries with key takeaways,
+            timestamps, and action items. Be concise but thorough." PARAMETER
+            temperature 0.3 PARAMETER num_ctx 4096
+          </div>
+          <button class="btn-copy" id="copyModelfileBtn">Copy Modelfile</button>
+          <span class="copy-msg" id="modelfileCopyMsg">Copied!</span>
+          <p class="field-hint">
+            Save as <code style="color: var(--text)">Modelfile</code> and run:
+            <code style="color: var(--text)"
+              >ollama create yt-summarizer -f Modelfile</code
+            >
+          </p>
+        </div>
+      </div>
+
+      <!-- Cache -->
+      <div class="card">
+        <div class="card-title">Summary Cache</div>
+        <div class="field">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 12px;
+            "
+          >
+            <label style="margin-bottom: 0">Cached Summaries</label>
+            <span
+              id="cacheSize"
+              style="
+                font-size: 11px;
+                color: var(--muted);
+                font-family: var(--mono);
+              "
+              >0 summaries (0 KB)</span
+            >
+          </div>
+          <button class="btn-save btn-danger" id="clearCacheBtn">
+            Clear All Summaries
+          </button>
+        </div>
+        <p class="field-hint">
+          Summaries are cached locally for 30 days. Clearing will remove all
+          cached summaries.
+        </p>
+      </div>
+
+      <!-- Privacy -->
+      <div class="card">
+        <div class="card-title">Privacy</div>
+        <div class="privacy-note">
+          <span
+            >API keys are stored locally in Chrome encrypted sync storage and
+            only sent directly to the respective AI provider. YT Summarizer has
+            no backend server. Ollama runs entirely on your machine.</span
+          >
+        </div>
+      </div>
+
+      <button class="btn-save" id="saveBtn">Save Settings</button>
+      <div class="save-msg" id="saveMsg">Settings saved successfully</div>
+    </div>
+
+    <script src="src/options.js"></script>
+  </body>
+</html>
