@@ -3,9 +3,8 @@
   "name": "YT Summarizer – AI Notes",
   "version": "1.0.0",
   "description": "Generate structured summary.md from any YouTube video — Groq (free), Ollama (private), Claude, or OpenAI.",
-  "permissions": ["activeTab", "scripting", "storage", "downloads"],
-  "host_permissions": [
-    "https://www.youtube.com/*",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "optional_host_permissions": [
     "https://api.groq.com/*",
     "https://api.anthropic.com/*",
     "https://api.openai.com/*",
@@ -23,12 +22,6 @@
   "background": {
     "service_worker": "src/background.js"
   },
-  "content_scripts": [
-    {
-      "matches": ["https://www.youtube.com/*"],
-      "js": ["src/content.js"]
-    }
-  ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

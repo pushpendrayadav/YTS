@@ -246,16 +246,14 @@
             <td>Store API keys and cached summaries locally in the browser</td>
           </tr>
           <tr>
-            <td>downloads</td>
-            <td>Save the generated .md summary file to the user's device</td>
-          </tr>
-          <tr>
-            <td>Host permissions (youtube.com)</td>
-            <td>Read transcript data from the YouTube page</td>
-          </tr>
-          <tr>
-            <td>Host permissions (API endpoints)</td>
-            <td>Send transcript to the user's chosen AI provider</td>
+            <td>
+              Optional host permissions (AI provider endpoints / localhost)
+            </td>
+            <td>
+              Requested only when the user selects a provider, so the extension
+              can send the transcript to that specific AI service or local
+              Ollama instance
+            </td>
           </tr>
         </tbody>
       </table>

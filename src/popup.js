@@ -47,6 +47,13 @@ const MODELS = {
   ],
 };
 
+const PROVIDER_ORIGINS = {
+  groq: "https://api.groq.com/*",
+  claude: "https://api.anthropic.com/*",
+  openai: "https://api.openai.com/*",
+  ollama: "http://localhost:11434/*",
+};
+
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     const onboardingDone = await checkOnboardingComplete();
@@ -101,8 +108,9 @@ async function initMainUI() {
   updateModelOptions();
   setupListeners();
 
-  // Check Ollama health (non-blocking)
-  checkOllamaHealth();
+  if (currentProvider === "ollama") {
+    await checkOllamaHealth();
+  }
 
   await updateKeyStatus();
 
@@ -132,7 +140,7 @@ function setupListeners() {
       await chrome.storage.local.set({ lastProvider: currentProvider });
       updateModelOptions();
       await updateKeyStatus();
-      if (currentProvider === "ollama") await checkOllamaHealth();
+      if (currentProvider === "ollama") await checkOllamaHealth(true);
     });
   });
 
@@ -269,11 +277,51 @@ function updateBtnLabel() {
   }
 }
 
-async function checkOllamaHealth() {
+async function ensureProviderAccess(provider, interactive = false) {
+  const origin = PROVIDER_ORIGINS[provider];
+  if (!origin) return true;
+
+  const hasAccess = await chrome.permissions.contains({ origins: [origin] });
+  if (hasAccess || !interactive) return hasAccess;
+
+  try {
+    return await chrome.permissions.request({ origins: [origin] });
+  } catch (_) {
+    return false;
+  }
+}
+
+async function ensureContentScript(tabId) {
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ["src/content.js"],
+  });
+}
+
+async function checkOllamaHealth(interactive = false) {
   const statusEl = document.getElementById("ollamaStatus");
   if (statusEl) {
     statusEl.textContent = "●";
     statusEl.className = "ollama-badge checking";
+  }
+
+  const hasAccess = await ensureProviderAccess("ollama", interactive);
+  if (!hasAccess) {
+    ollamaHealthy = false;
+    if (statusEl) {
+      statusEl.textContent = "●";
+      statusEl.className = "ollama-badge unhealthy";
+      statusEl.title = "Grant localhost access to use Ollama";
+    }
+    if (currentProvider === "ollama") {
+      document.getElementById("generateBtn").disabled = true;
+      const offlineEl = document.getElementById("ollamaOffline");
+      if (offlineEl) {
+        offlineEl.style.display = "block";
+        offlineEl.textContent = "Grant localhost access to use Ollama.";
+      }
+    }
+    return;
   }
 
   try {
@@ -395,6 +443,7 @@ async function generate() {
       active: true,
       currentWindow: true,
     });
+    await ensureContentScript(tab.id);
 
     let transcriptResult;
     try {
@@ -441,6 +490,13 @@ async function generate() {
       "claudeKey",
       "openaiKey",
     ]);
+    const hasProviderAccess = await ensureProviderAccess(currentProvider, true);
+    if (!hasProviderAccess) {
+      throw new Error(
+        `${providerLabel()} access permission is required to generate summaries.`,
+      );
+    }
+
     const keyMap = {
       groq: "groqKey",
       claude: "claudeKey",
