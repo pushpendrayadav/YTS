@@ -5,6 +5,7 @@ let videoData = null;
 let ollamaHealthy = false;
 let cachedSummary = null;
 let currentVideoId = null;
+let currentOutputFormat = "md";
 
 const CACHE_EXPIRY_DAYS = 30;
 
@@ -56,6 +57,7 @@ const PROVIDER_ORIGINS = {
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
+    setupGlobalUtilityListeners();
     const onboardingDone = await checkOnboardingComplete();
     if (!onboardingDone) {
       const container = document.getElementById("onboarding-screen");
@@ -72,9 +74,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 /** Called after onboarding completes or on normal load */
 async function initMainUI() {
   // Restore last provider
-  const stored = await chrome.storage.local.get(["lastProvider"]);
+  const stored = await chrome.storage.local.get([
+    "lastProvider",
+    "lastOutputFormat",
+  ]);
   if (stored.lastProvider && MODELS[stored.lastProvider]) {
     currentProvider = stored.lastProvider;
+  }
+  if (stored.lastOutputFormat === "pdf") {
+    currentOutputFormat = "pdf";
+  }
+
+  const outputSelect = document.getElementById("outputFormat");
+  if (outputSelect) {
+    outputSelect.value = currentOutputFormat;
   }
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -128,6 +141,21 @@ function setupSettingsBtn() {
     btn.addEventListener("click", () => chrome.runtime.openOptionsPage());
 }
 
+function setupGlobalUtilityListeners() {
+  const convertBtn = document.getElementById("convertMdBtn");
+  const mdFileInput = document.getElementById("mdFileInput");
+
+  if (convertBtn && !convertBtn.dataset.bound) {
+    convertBtn.dataset.bound = "true";
+    convertBtn.addEventListener("click", () => mdFileInput?.click());
+  }
+
+  if (mdFileInput && !mdFileInput.dataset.bound) {
+    mdFileInput.dataset.bound = "true";
+    mdFileInput.addEventListener("change", convertMarkdownFile);
+  }
+}
+
 function setupListeners() {
   // Provider tabs
   document.querySelectorAll(".tab").forEach((tab) => {
@@ -161,6 +189,15 @@ function setupListeners() {
 
   // Generate button
   document.getElementById("generateBtn").addEventListener("click", generate);
+
+  const outputSelect = document.getElementById("outputFormat");
+  if (outputSelect) {
+    outputSelect.addEventListener("change", async (event) => {
+      currentOutputFormat = event.target.value === "pdf" ? "pdf" : "md";
+      await chrome.storage.local.set({ lastOutputFormat: currentOutputFormat });
+      updateBtnLabel();
+    });
+  }
 
   // Copy error link
   document.getElementById("errorBox").addEventListener("click", (e) => {
@@ -270,10 +307,12 @@ async function updateKeyStatus() {
 
 function updateBtnLabel() {
   const btn = document.getElementById("generateBtn");
+  const outputLabel =
+    currentOutputFormat === "pdf" ? "summary.pdf" : "summary.md";
   if (cachedSummary) {
-    btn.textContent = "Download cached summary";
+    btn.textContent = `Download cached ${outputLabel}`;
   } else {
-    btn.textContent = "Generate summary.md";
+    btn.textContent = `Generate ${outputLabel}`;
   }
 }
 
@@ -408,6 +447,7 @@ async function generate() {
   const errorBox = document.getElementById("errorBox");
   const successBox = document.getElementById("successBox");
   const cacheIndicator = document.getElementById("cacheIndicator");
+  const outputFormat = currentOutputFormat;
 
   // Reset UI
   errorBox.style.display = "none";
@@ -416,15 +456,23 @@ async function generate() {
   // If cached, just download
   if (cachedSummary && cachedSummary.summary) {
     const now = new Date().toISOString().split("T")[0];
-    const filename = `summary_${sanitizeFilename(cachedSummary.title || "video")}_${now}.md`;
-    downloadMarkdown(cachedSummary.summary, filename);
-    successBox.style.display = "block";
+    const filename = buildSummaryFilename(
+      cachedSummary.title || "video",
+      now,
+      outputFormat,
+    );
+    downloadSummary(cachedSummary.summary, filename, outputFormat);
+    showSuccess(
+      outputFormat === "pdf"
+        ? "summary.pdf downloaded!"
+        : "summary.md downloaded!",
+    );
     // Reset for next click
     btn.textContent = "Done! Generate again?";
     cachedSummary = null;
     cacheIndicator.style.display = "none";
     setTimeout(() => {
-      btn.textContent = "Generate summary.md";
+      updateBtnLabel();
     }, 3000);
     return;
   }
@@ -559,17 +607,21 @@ ${finalSummaryText}
       });
     }
 
-    const filename = `summary_${sanitizeFilename(title)}_${now}.md`;
-    downloadMarkdown(finalMarkdown, filename);
+    const filename = buildSummaryFilename(title, now, outputFormat);
+    downloadSummary(finalMarkdown, filename, outputFormat);
 
     setProgress(100, "Done!");
     btn.textContent = "Done! Generate again?";
     setTimeout(() => {
       progress.style.display = "none";
-      successBox.style.display = "block";
+      showSuccess(
+        outputFormat === "pdf"
+          ? "summary.pdf downloaded!"
+          : "summary.md downloaded!",
+      );
       btn.disabled = false;
       setTimeout(() => {
-        btn.textContent = "Generate summary.md";
+        updateBtnLabel();
       }, 3000);
     }, 600);
   } catch (err) {
@@ -579,7 +631,28 @@ ${finalSummaryText}
     errorBox.dataset.errorMsg = msg;
     errorBox.style.display = "block";
     btn.disabled = false;
-    btn.textContent = "Generate summary.md";
+    updateBtnLabel();
+  }
+}
+
+async function convertMarkdownFile(event) {
+  const input = event.target;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const errorBox = document.getElementById("errorBox");
+  errorBox.style.display = "none";
+
+  try {
+    await window.YTPdfExportUtils.convertMarkdownFileToPdf(file);
+    showSuccess("PDF created from Markdown!");
+  } catch (err) {
+    const msg = err.message || "Markdown to PDF conversion failed.";
+    errorBox.innerHTML = `Error: ${escapeHtml(msg)}<br><span class="copy-err">Copy error</span>`;
+    errorBox.dataset.errorMsg = msg;
+    errorBox.style.display = "block";
+  } finally {
+    input.value = "";
   }
 }
 
@@ -602,6 +675,17 @@ function setProgress(pct, text) {
   if (txt) txt.textContent = text;
 }
 
+function showSuccess(message) {
+  const successBox = document.getElementById("successBox");
+  successBox.innerHTML = `<span class="check">Done</span>${escapeHtml(message)}`;
+  successBox.style.display = "block";
+}
+
+function buildSummaryFilename(title, date, format) {
+  const extension = format === "pdf" ? "pdf" : "md";
+  return `summary_${sanitizeFilename(title)}_${date}.${extension}`;
+}
+
 function sanitizeFilename(name) {
   return name
     .replace(/[^a-z0-9]/gi, "_")
@@ -617,6 +701,18 @@ function escapeHtml(str) {
 
 function downloadMarkdown(content, filename) {
   const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+  downloadBlob(blob, filename);
+}
+
+function downloadSummary(markdown, filename, format) {
+  if (format === "pdf") {
+    window.YTPdfExportUtils.downloadPdfFromMarkdown(markdown, filename);
+    return;
+  }
+  downloadMarkdown(markdown, filename);
+}
+
+function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
